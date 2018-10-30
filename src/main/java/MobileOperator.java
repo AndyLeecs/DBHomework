@@ -32,7 +32,7 @@ public class MobileOperator {
         System.out.println("---已订购订单情况查看---");
         String sql = "select plan.id, plan.name, call_mins, texts, local_data_gb, nation_data_gb, start_time, end_time " +
         "from user_plan_ref join plan on user_plan_ref.plan = plan.id where user = " + phoneNum
-                + " order by end_time";
+                + " and start_time != end_time order by end_time";
         ResultSet rs = QueryUtil.executeQuery(conn, sql);
         ArrayList<Plan> currentPlans = new ArrayList<>();
         while (rs.next())
