@@ -18,14 +18,14 @@ public class Launcher {
 //
             System.out.println("1.2 某用户订购套餐");
             Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.YEAR, 2019);
-            cal.set(Calendar.MONTH, 1 );
+            cal.set(Calendar.YEAR, 2018);
+            cal.set(Calendar.MONTH, 10 );
             cal.set(Calendar.DATE, 1);
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
             Date start_time = cal.getTime();
-            cal.set(Calendar.MONTH, 2);
+            cal.set(Calendar.MONTH, 11);
             cal.set(Calendar.DATE, 1);
             Date end_time = cal.getTime();
             start = System.currentTimeMillis();

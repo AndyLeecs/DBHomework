@@ -197,7 +197,8 @@ public class MobileOperator {
         assert start_time.before(end_time);
         //查看是否重复订购
         String selectSql = "select start_time, end_time from user_plan_ref where user = \""+phoneNum + "\" and plan = " + planId
-                +" and (UNIX_TIMESTAMP(end_time) - UNIX_TIMESTAMP(\"" + startDateTime + "\")) > 0";
+                +" and (UNIX_TIMESTAMP(end_time) - UNIX_TIMESTAMP(\"" + startDateTime + "\")) > 0"
+                +" and (UNIX_TIMESTAMP(start_time) - UNIX_TIMESTAMP(\"" + startDateTime + "\")) <= 0";
         ResultSet rs = QueryUtil.executeQuery(conn, selectSql);
         if(rs.next()){
             rs.previous();
