@@ -1,5 +1,4 @@
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -9,8 +8,8 @@ public class Launcher {
 
         try {
             MobileOperator mo = new MobileOperator();
-            long start = 0;
-            long end = 0;
+            long start;
+            long end;
             System.out.println("1.1 对某个用户进行套餐的查询（包括历史记录）");
             start = System.currentTimeMillis();
             mo.findAllByPhoneNum("16161293774");
@@ -42,7 +41,7 @@ public class Launcher {
 
             System.out.println("2 某个用户在通话情况下的资费生成");
             cal.set(Calendar.YEAR, 2018);
-            cal.set(Calendar.MONTH, 9);
+            cal.set(Calendar.MONTH, 10);
             cal.set(Calendar.DATE, 31);
             cal.set(Calendar.HOUR_OF_DAY, 15);
             cal.set(Calendar.MINUTE, 0);

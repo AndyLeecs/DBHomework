@@ -1,10 +1,10 @@
-import javax.management.Query;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
-import java.text.SimpleDateFormat;
 
 public class MobileOperator {
     private Connection conn;
@@ -29,22 +29,19 @@ public class MobileOperator {
         int local_data_total = 0;
         int nation_data_total = 0;
 
+        System.out.println("---已订购订单情况查看---");
         String sql = "select plan.id, plan.name, call_mins, texts, local_data_gb, nation_data_gb, start_time, end_time " +
         "from user_plan_ref join plan on user_plan_ref.plan = plan.id where user = " + phoneNum
                 + " order by end_time";
-//        String sql = "select 5plan.name, start_time, end_time " +
-//                "from user_plan_ref join plan on user_plan_ref.plan = plan.id where user = " + phoneNum
-//                + " order by end_time";
         ResultSet rs = QueryUtil.executeQuery(conn, sql);
-        System.out.println("---已订购订单情况查看---");
-        ArrayList<Plan> currentPlans = new ArrayList<Plan>();
+        ArrayList<Plan> currentPlans = new ArrayList<>();
         while (rs.next())
         {
             System.out.print(rs.getString("plan.name")+" ");
             System.out.print(rs.getDate("start_time")+" "+rs.getTime("start_time")+" ");
             System.out.print(rs.getDate("end_time")+" " + rs.getTime("end_time")+" ");
             System.out.println();
-//
+
             //加入本月订单列表
             Timestamp now = new Timestamp(System.currentTimeMillis());
             if(rs.getTimestamp("start_time").before(now)
@@ -64,10 +61,9 @@ public class MobileOperator {
             }
         }
 
-
+        System.out.println("---当月各项剩余情况---");
         String monthConditionSql = "select call_mins, texts, local_data, nation_data from user where phone_num = " + phoneNum;
         rs = QueryUtil.executeQuery(conn, monthConditionSql);
-        System.out.println("---当月各项剩余情况---");
         int call_mins_rem = 0;
         int texts_rem = 0;
         int local_data_rem = 0;
@@ -214,82 +210,24 @@ public class MobileOperator {
             return;
         }
 
-//        //查看用户是否还有钱订购
-//        double balance = 0;
-//        String checkBalanceSql = "select balance from user where phone_num = "+phoneNum;
-//        rs = executeQuery(checkBalanceSql);
-//        assert rs.getFetchSize() == 1;
-//        while(rs.next())
-//        {
-//            balance = rs.getDouble("balance");
-//        }
-//        double base_fee = 0;
-//        String checkBaseFeeSql = "select base_fee from plan where id = "+planId;
-//        rs = executeQuery(checkBaseFeeSql);
-//        assert rs.getFetchSize() == 1;
-//        while (rs.next())
-//        {
-//            base_fee = rs.getDouble("base_fee");
-//        }
-//        if(balance < base_fee)
-//        {
-//            System.out.println("请先充值， 您的余额为 "+balance+" 元， 套餐月功能费为 " + base_fee + " 元");
-//            return;
-//        }
-
-        //未订购
+        //如果未订购过，订购该套餐
         String addPlanSql = "insert into user_plan_ref (user, plan, start_time, end_time) value (" +
                 "\"" + phoneNum + "\"," +
                 "\"" + planId + "\"," +
                 "\"" + startDateTime + "\"," +
                 "\"" + endDateTime + "\"" +
                 ")";
-//        String minusMoneySql = "UPDATE user SET balance = " + balance +
-//                " WHERE phone_num = " + phoneNum;
-//        executeSQLs(new String[]{addPlanSql, minusMoneySql});
         QueryUtil.executeSQL(conn, addPlanSql);
         System.out.println("成功订购");
     }
 
-    private Date nextMonthFirstDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.DAY_OF_MONTH, 1);
-        calendar.add(Calendar.MONTH, 1);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        return calendar.getTime();
-    }
-
-    private Date afterNextMonthFirstDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.DAY_OF_MONTH, 1);
-        calendar.add(Calendar.MONTH, 2);
-        return calendar.getTime();
-    }
-
-   //以下默认能被选择删除的planId都是用户已经订阅的plan，不再做check
-
     /**
-     * 1.3 用户退订立即生效
-     * 默认能够选择的planId都是用户正在用的plan
-     */
-    public void deletePlanImmediate(String phoneNum, int planId)
-    {
-//        String checkPlanDetailSql =
-//        String addBalance =
-//        Date newEndDate = new Date();
-//        String deletePlanSql = "update user_plan_ref set end_time = " + newEndDate +" where user = "+phoneNum + " and plan = " + planId
-//                +" and end_time > " + newEndDate;
-    }
-
-    /**
-     * 1.4 用户退订次月生效
+     * 1.3 用户退订次月生效
      * 默认能被选择的planId都是用户已经订阅的plan，且未生效的plan不能退订
      */
     public void deletePlanNextMonth(String phoneNum, int planId)
     {
-        Date newEndDate = nextMonthFirstDate();
+        Date newEndDate = DateUtil.nextMonthFirstDate();
         String sql = "update user_plan_ref set end_time = \""
                 + FormatUtil.format(newEndDate) +"\" where user = "+phoneNum + " and plan = " + planId
                 +" and end_time > \"" + FormatUtil.format(newEndDate) + "\"";
@@ -304,20 +242,13 @@ public class MobileOperator {
      */
     public void generateCallFee(final String phoneNum, final String contact, final Date startTime, final Date endTime, boolean isCaller)  throws SQLException
     {
-//        System.out.println(format(endTime));
-        //判断是否跨月
-//        if(isDiffMonth(startTime, endTime) && !getFirstDateInMonth(endTime).equals(endTime))
-//        {
-//            generateCallFee(phoneNum, contact, startTime, getLastDateInMonth(startTime), isCaller);
-//            generateCallFee(phoneNum, contact, getFirstDateInMonth(endTime), endTime, isCaller);
-//        }
         double fee = 0;
         int call_mins_remain = 0;
         double balance = 0;
         if(isCaller)
         {
             //获取用户的剩余可用拨打时间
-            int call_mins = getMin(startTime, endTime);
+            int call_mins = DateUtil.getMin(startTime, endTime);
             ResultSet rs = QueryUtil.executeQuery(conn,"select call_mins, balance from user where phone_num = " + phoneNum);
             assert rs.getFetchSize() == 1;
             while (rs.next()) {
@@ -325,9 +256,6 @@ public class MobileOperator {
                 balance = rs.getDouble("balance");
             }
 
-//            System.out.println("call_mins" + call_mins);
-//            System.out.println("call_mins_remain" + call_mins_remain);
-//            System.out.println("balance" + balance);
             //检查剩余可用拨打时间是否足够
             if(call_mins < call_mins_remain)
             {
@@ -341,11 +269,8 @@ public class MobileOperator {
                 int mins_to_pay = call_mins - call_mins_remain;
                 fee = getCallFee(mins_to_pay, Rule.CALL);
                 balance = balance - fee;
-//                System.out.println("fee"+fee);
             }
         }
-//         System.out.println(format(startTime));
-//         System.out.println(format(endTime));
             String addDetailSql = "insert into call_detail (user, fee, contact, start_time, end_time, iscaller) value ("+
                     "\"" + phoneNum + "\"," +
                     "\"" + fee + "\"," +
@@ -354,8 +279,6 @@ public class MobileOperator {
                     "\"" + FormatUtil.format(endTime) + "\"," +
                     isCaller +
                     ")";
-//            String minusTimeSql = "UPDATE user SET call_mins = " + call_mins_remain +
-//                    " WHERE phone_num = " + phoneNum;
             String minusTimeAndMoneySql = "UPDATE user SET call_mins = " + call_mins_remain + " , balance = " + balance +
                     " WHERE phone_num = " + phoneNum;
         //如果是被叫，只加一条通话记录
@@ -365,7 +288,7 @@ public class MobileOperator {
         }
         //否则，更改用户的个人信息
         else {
-            executeSQLs(new String[]{addDetailSql, minusTimeAndMoneySql});
+            QueryUtil.executeSQLs(conn, new String[]{addDetailSql, minusTimeAndMoneySql});
             System.out.println("添加主叫记录并更改个人信息");
         }
 
@@ -377,14 +300,6 @@ public class MobileOperator {
      */
     public void generateDataFee(final String phoneNum, final Date startTime, final Date endTime, final int data, final String fromWhere) throws SQLException
     {
-//            //判断是否跨月
-//            if(isDiffMonth(startTime, endTime) && !getFirstDateInMonth(endTime).equals(endTime))
-//            {
-//                generateDataFee(phoneNum, startTime, getLastDateInMonth(startTime), data, fromWhere);
-//                generateDataFee(phoneNum, getFirstDateInMonth(endTime), endTime, data, fromWhere);
-//            }
-
-            int duration = getMin(startTime, endTime);
             double fee = 0;
 
             //获取用户个人信息
@@ -451,7 +366,6 @@ public class MobileOperator {
                     }
                 }
             }
-//        System.out.println("balance_after_change" + format(balance));
         String addDetailSql = "insert into data_detail (user, fee, start_time, end_time, data, islocal) value (" +
                     "\"" + phoneNum + "\"," +
                     "\"" + fee + "\"," +
@@ -463,7 +377,7 @@ public class MobileOperator {
         String minusDataAndMoneySql = "UPDATE user SET local_data = " + local_data + " , nation_data = "
                 +nation_data+" , balance = " + FormatUtil.format(balance) +
                 " WHERE phone_num = " + phoneNum;
-        executeSQLs(new String[]{addDetailSql, minusDataAndMoneySql});
+        QueryUtil.executeSQLs(conn, new String[]{addDetailSql, minusDataAndMoneySql});
         System.out.println("已添加流量记录");
         checkBalance(balance);
     }
@@ -518,14 +432,6 @@ public class MobileOperator {
         }
     }
 
-
-    private int getMin(Date startTime, Date endTime)
-    {
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        int duration = (int)(endTime.getTime() - startTime.getTime())/(60 *1000);
-        return duration;
-    }
-
     private double getCallFee(int min, double rule)
     {
         return min * rule;
@@ -536,68 +442,7 @@ public class MobileOperator {
         return dataInMb * rule;
     }
 
-    private int getMins(Date duration)
-    {
-        Long time = duration.getTime();
-        int mins = (int)Math.ceil((double)time/1000.0*60);
-        return mins;
-    }
-
-
-    /**
-     * 执行一组 SQL 语句
-     *
-     * @param statements SQL 语句数组
-     */
-    private void executeSQLs(String[] statements) {
-        Statement statement;
-        try{
-            statement = conn.createStatement();
-            for (String s : statements) {
-                statement.addBatch(s);
-            }
-            statement.executeBatch();
-            conn.commit();
-        } catch (Exception e) {
-            e.printStackTrace();
-            try {
-                conn.rollback();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-            }
-        }
-    }
-
-
-//    private ResultSet executePrepareStatement(String sql, String s, int integer, Date time)
-//    {
-//        try {
-//            PreparedStatement ps = conn.prepareStatement(sql);
-//            ps.setString(1,s);
-//            ps.setInt(2,integer);
-//            String ss = "2019-01-01 00:00:00";
-//            ps.setString(3, ss);
-////            ps.setObject( 3,LocalDateTime.of(2019, 1, 1, 0, 0, 0));
-//            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-////            ps.setTimestamp(3, new Timestamp(time.getTime()));
-//            String sss = "select * from user_plan_ref";
-//            ps = conn.prepareStatement(sss);
-//            Statement statement = conn.createStatement();
-//            statement.execute(sss);
-//            conn.commit();
-//            return statement.getResultSet();
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            try {
-//                conn.rollback();
-//            } catch (SQLException e1) {
-//                e1.printStackTrace();
-//            }
-//        }
-//        return null;
-//    }
-
-     private void checkBalance(double balance)
+    private void checkBalance(double balance)
      {
          if(balance < Rule.BALANCE_ALARM)
          {
@@ -605,53 +450,10 @@ public class MobileOperator {
          }
      }
 
-//     private boolean isDiffMonth(Date date1, Date date2)
-//     {
-//         return !getMonth(date1).equals(getMonth(date2));
-//     }
-//
-//     private Date getLastDateInMonth(Date date)
-//     {
-//         Date res = null;
-//         SimpleDateFormat df = getDayFormat();
-//         try {
-//             res  = df.parse(getDay(date) + "23:59:59");
-//         } catch (ParseException e) {
-//             e.printStackTrace();
-//         }
-//         return res;
-//     }
-//
-//     private Date getFirstDateInMonth(Date date)
-//     {
-//         Date res = null;
-//         SimpleDateFormat df = getDayFormat();
-//         try {
-//             res  = df.parse(getDay(date) + "00:00:00");
-//         } catch (ParseException e) {
-//             e.printStackTrace();
-//         }
-//         return res;
-//     }
-
-//     private String getMonth(Date date){
-//        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM");
-//        return df.format(date);
-//     }
-//     private String getDay(Date date){
-//         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-//         return df.format(date);
-//     }
-
-//     private SimpleDateFormat getYearFormat()
-//     {
-//         return new SimpleDateFormat("yyyy-MM-dd");
-//     }
-//
-//
-
-
-     class Plan{
+    /**
+     * 套餐
+     */
+    class Plan {
         int id;
         String name;
         int call_mins;

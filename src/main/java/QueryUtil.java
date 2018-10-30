@@ -6,8 +6,6 @@ import java.sql.Statement;
 public class QueryUtil {
     /**
      * 执行一句 SQL 语句
-     *
-     * @param sql
      */
     public static void executeSQL(Connection conn, String sql){
         Statement statement = null;
@@ -24,10 +22,32 @@ public class QueryUtil {
             }
         }
     }
+
+
     /**
-     * 执行一句 SQL 语句
-     *
-     * @param sql
+     * 执行一组 SQL 语句
+     */
+    public static void executeSQLs(Connection conn, String[] statements) {
+        Statement statement;
+        try {
+            statement = conn.createStatement();
+            for (String s : statements) {
+                statement.addBatch(s);
+            }
+            statement.executeBatch();
+            conn.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 执行一句 SQL 查询
      */
     public static ResultSet executeQuery(Connection conn, String sql){
         Statement statement;

@@ -9,7 +9,7 @@ public class FormatUtil {
         return df.format(date);
     }
 
-    public static String format(double  d) {
+    public static String format(double d) {
         DecimalFormat df = new DecimalFormat("#.00");
         return df.format(d);
     }
